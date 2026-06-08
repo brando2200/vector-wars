@@ -521,6 +521,7 @@ const perfProfile = {
   wakeScale:1,
   allowBulletGridWarp:true,
   allowGridDimming:true,
+  shootSfx:true,
   maxParticles:520,
   maxBullets:180
 };
@@ -538,6 +539,7 @@ function applyPerformanceProfile() {
   perfProfile.wakeScale = mobileLike ? 0.45 : 1;
   perfProfile.allowBulletGridWarp = !mobileLike;
   perfProfile.allowGridDimming = !mobileLike;
+  perfProfile.shootSfx = !mobileLike;
   perfProfile.maxParticles = mobileLike ? 260 : 520;
   perfProfile.maxBullets = mobileLike ? 80 : 180;
   return wasMobile !== mobileLike;
@@ -906,9 +908,15 @@ let sampleSfxReady = false;
 function loadSampleSfx() {
   if (sampleSfxReady) return;
   Object.keys(SAMPLE_SFX).forEach(key => {
+    if (key === 'shoot' && !perfProfile.shootSfx) {
+      samplePools[key] = [];
+      sampleCursor[key] = 0;
+      return;
+    }
     samplePools[key] = SAMPLE_SFX[key].map(src => {
       const pool = [];
-      for (let i = 0; i < 4; i++) {
+      const poolSize = perfProfile.mobile ? 2 : 4;
+      for (let i = 0; i < poolSize; i++) {
         const audio = new Audio(src);
         audio.preload = 'auto';
         audio.volume = Math.max(0, Math.min(1, (_sfxVol / 100) * 0.9));
@@ -931,6 +939,7 @@ function setSampleSfxVolume() {
 function playSample(key, variant = 0, rate = 1, volumeScale = 1) {
   if (!sampleSfxReady || !samplePools[key]) return;
   const groups = samplePools[key];
+  if (!groups.length) return;
   const group = groups[Math.max(0, Math.min(groups.length - 1, variant))];
   const index = sampleCursor[key]++ % group.length;
   const audio = group[index];
@@ -1100,6 +1109,7 @@ function initAudio() {
 
     // Sampled SFX pack overrides. Tone music remains optional, but gameplay SFX use the WAV folder.
     playShoot = (lvl) => {
+      if (!perfProfile.shootSfx) return;
       if (!allowSfx('shoot', perfProfile.mobile ? 0.055 : 0.020)) return;
       const variant = lvl >= 4 ? 1 : lvl >= 2 ? 2 : 0;
       playSample('shoot', variant, 0.97 + Math.random() * 0.06, perfProfile.mobile ? 0.48 : 0.75);
