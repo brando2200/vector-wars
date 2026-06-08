@@ -512,6 +512,32 @@ const touchInput = {
   aimActive:false,
   shoot:false
 };
+const perfProfile = {
+  mobile:false,
+  gridCols:120,
+  gridRows:80,
+  gridStep:1,
+  wakeEvery:2,
+  wakeScale:1,
+  allowGridDimming:true,
+  maxParticles:520
+};
+function isMobileLikeDevice() {
+  return matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function applyPerformanceProfile() {
+  const mobileLike = isMobileLikeDevice();
+  const wasMobile = perfProfile.mobile;
+  perfProfile.mobile = mobileLike;
+  perfProfile.gridCols = mobileLike ? 54 : 120;
+  perfProfile.gridRows = mobileLike ? 36 : 80;
+  perfProfile.gridStep = mobileLike ? 2 : 1;
+  perfProfile.wakeEvery = mobileLike ? 5 : 2;
+  perfProfile.wakeScale = mobileLike ? 0.45 : 1;
+  perfProfile.allowGridDimming = !mobileLike;
+  perfProfile.maxParticles = mobileLike ? 260 : 520;
+  return wasMobile !== mobileLike;
+}
 const CONTROLLER_MAP_KEY = 'vw_controller_map_v1';
 const gamepad = {
   connected:false,
@@ -1315,11 +1341,13 @@ function fireBullets(x, y, angle) {
 }
 
 // ── Grid ───────────────────────────────────────────────────────────────
-// Grid: 48x32 = 1617 pts — tight spacing, balanced performance
-const GCOLS = 120, GROWS = 80;  // very tight 3-tier grid
+// Desktop keeps the dense warp grid; mobile uses a lighter grid profile.
+let GCOLS = 120, GROWS = 80;
 // gridPts, gridW/H/offX/offY declared at top of script
 
 function initGrid() {
+  GCOLS = perfProfile.gridCols;
+  GROWS = perfProfile.gridRows;
   gridW = W * 1.04; gridH = H * 1.04;
   gridOffX = (W - gridW) / 2;
   gridOffY = (H - gridH) / 2;
@@ -1335,6 +1363,9 @@ function initGrid() {
 
 // PERF: spatial early-out — skip points clearly outside radius before sqrt
 function disturbGrid(px, py, force, radius) {
+  if (perfProfile.mobile && force < 2.2) return;
+  force *= perfProfile.wakeScale;
+  radius *= perfProfile.mobile ? 0.78 : 1;
   // Ripple: points near the source get an inward velocity impulse.
   // The spring physics then pulls them back, creating an outward wave ring.
   const r2 = radius * radius;
@@ -1358,6 +1389,8 @@ function disturbGrid(px, py, force, radius) {
 function bulletWakeGrid(px, py, bvx, bvy, force, radius) {
   const bspd = Math.sqrt(bvx*bvx + bvy*bvy);
   if (bspd < 0.5) return;
+  force *= perfProfile.wakeScale;
+  radius *= perfProfile.mobile ? 0.72 : 1;
   const fx = bvx/bspd, fy = bvy/bspd;  // forward unit vector
 
   const r2 = radius * radius;
@@ -1431,7 +1464,8 @@ function drawGrid() {
   // minor = neither
 
   // ── Draw rows ───────────────────────────────────────────────────────
-  for (let r = 0; r <= GROWS; r++) {
+  const step = perfProfile.gridStep;
+  for (let r = 0; r <= GROWS; r += step) {
     let style, lw, dash;
     if (isMaj(r))       { style=getGridStrokeStyle(0.60, 0); lw=1.0; dash=[];     }
     else if (isMid(r))  { style=getGridStrokeStyle(0.40, -8); lw=0.7; dash=[];     }
@@ -1439,7 +1473,7 @@ function drawGrid() {
     ctx.beginPath();
     ctx.strokeStyle = style; ctx.lineWidth = lw;
     ctx.setLineDash(dash);
-    for (let c = 0; c <= GCOLS; c++) {
+    for (let c = 0; c <= GCOLS; c += step) {
       const p = gridPts[r*(GCOLS+1)+c];
       c===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
     }
@@ -1447,7 +1481,7 @@ function drawGrid() {
   }
 
   // ── Draw cols ───────────────────────────────────────────────────────
-  for (let c = 0; c <= GCOLS; c++) {
+  for (let c = 0; c <= GCOLS; c += step) {
     let style, lw, dash;
     if (isMaj(c))       { style=getGridStrokeStyle(0.60, 0); lw=1.0; dash=[];     }
     else if (isMid(c))  { style=getGridStrokeStyle(0.40, -8); lw=0.7; dash=[];     }
@@ -1455,7 +1489,7 @@ function drawGrid() {
     ctx.beginPath();
     ctx.strokeStyle = style; ctx.lineWidth = lw;
     ctx.setLineDash(dash);
-    for (let r = 0; r <= GROWS; r++) {
+    for (let r = 0; r <= GROWS; r += step) {
       const p = gridPts[r*(GCOLS+1)+c];
       r===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
     }
@@ -1463,7 +1497,7 @@ function drawGrid() {
   }
 
   // ── Displacement dimming pass (velocity-based) ─────────────────────
-  if ((typeof gridPulse === 'number' && gridPulse > 0.35) || (typeof bombFlash === 'number' && bombFlash > 0)) {
+  if (perfProfile.allowGridDimming && ((typeof gridPulse === 'number' && gridPulse > 0.35) || (typeof bombFlash === 'number' && bombFlash > 0))) {
     ctx.setLineDash([]);
     for (let r = 0; r <= GROWS; r += 2) {
       for (let c = 0; c < GCOLS; c += 2) {
@@ -1552,6 +1586,9 @@ function drawFragments() {
   ctx.globalAlpha = 1;
 }
 function spawnParticles(x, y, color, count, speed) {
+  if (perfProfile.mobile) count = Math.max(1, Math.ceil(count * 0.55));
+  const overflow = particles.length + count - perfProfile.maxParticles;
+  if (overflow > 0) particles.splice(0, overflow);
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const spd = speed * (0.4 + Math.random() * 0.8);
@@ -1560,13 +1597,15 @@ function spawnParticles(x, y, color, count, speed) {
   }
 }
 function updateParticles() {
-  for (let i = particles.length-1; i >= 0; i--) {
+  let write = 0;
+  for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     p.x += p.vx; p.y += p.vy;
     p.vx *= 0.96; p.vy *= 0.96;
     p.life -= p.decay;
-    if (p.life <= 0) particles.splice(i,1);
+    if (p.life > 0) particles[write++] = p;
   }
+  particles.length = write;
 }
 function drawParticles() {
   // No shadowBlur — batch streaks and dots separately by color for fewer state changes
@@ -1851,7 +1890,7 @@ function updateBullets() {
     const curSpd = Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     const spdFrac = Math.min(curSpd / maxSpd, 1); // 0→1 as bullet accelerates
 
-    if (spdFrac > 0.35 && (b.life % 2 === 0 || weaponLevel >= 4)) {
+    if (spdFrac > 0.35 && (b.life % perfProfile.wakeEvery === 0 || (!perfProfile.mobile && weaponLevel >= 4))) {
       if (weaponLevel >= 3) {
         const wakeForce  = (3.5 + (weaponLevel - 3) * 1.0) * spdFrac; // 3.5/4.5/5.5
         const wakeRadius = 48 + (weaponLevel - 3) * 8;  // 48/56/64
@@ -3325,7 +3364,7 @@ function loop() {
     ctx.restore();
   }
   ctx.shadowBlur=0;
-  if(chromaFlash>0){
+  if(chromaFlash>0 && !perfProfile.mobile){
     chromaFlash--;
     const cf=chromaFlash/25*4;
     ctx.save();
@@ -3336,6 +3375,8 @@ function loop() {
     ctx.drawImage(canvas,-cf*0.7,cf*0.5);
     ctx.restore();
     ctx.globalCompositeOperation='source-over';
+  } else if (chromaFlash>0) {
+    chromaFlash--;
   }
 }
 
@@ -3353,9 +3394,11 @@ document.addEventListener('contextmenu', e=>e.preventDefault());
 const controllerMapBtn = document.getElementById('controller-map-btn');
 if (controllerMapBtn) controllerMapBtn.addEventListener('click', startControllerMapping);
 function setTouchEnabled() {
-  const mobileLike = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const profileChanged = applyPerformanceProfile();
+  const mobileLike = perfProfile.mobile;
   touchInput.enabled = mobileLike;
   document.body.classList.toggle('touch-enabled', mobileLike);
+  if (profileChanged && W && H) initGrid();
 }
 
 function setupTouchStick(id, role) {
