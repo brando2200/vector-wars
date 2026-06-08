@@ -333,6 +333,27 @@ body.touch-enabled #touch-controls { display: block; }
   touch-action: none;
   box-shadow: 0 0 22px rgba(255,68,68,0.2);
 }
+#rotate-overlay {
+  position: fixed; inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  background: rgba(0,0,0,0.92);
+  color: rgba(255,255,255,0.76);
+  font: bold 13px 'Courier New', monospace;
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 28px;
+}
+#rotate-overlay span {
+  display: block;
+  margin-top: 10px;
+  color: cyan;
+  text-shadow: 0 0 18px cyan;
+}
+body.touch-enabled.portrait-play #rotate-overlay { display: flex; }
 @media (min-width: 900px) and (pointer: fine) {
   body.touch-enabled #touch-controls { display: none; }
 }
@@ -404,6 +425,7 @@ body.touch-enabled #touch-controls { display: block; }
   <div class="touch-stick" id="touch-aim"><div class="touch-knob"></div></div>
   <button id="touch-bomb" type="button">Bomb</button>
 </div>
+<div id="rotate-overlay">Rotate your phone<span>Landscape recommended</span></div>
 
 <div id="overlay">
   <h1>VECTOR WARS</h1>
@@ -2995,6 +3017,7 @@ function updateUI() {
 
 // ── Game flow ──────────────────────────────────────────────────────────
 function startGame() {
+  requestMobileFullscreenLandscape();
   document.getElementById('overlay').style.display='none';
   score=0; lives=3; wave=1; multiplier=1; killStreak=0;
   totalKills=0; weaponLevel=0; upgradeFlash=0; bombs=3; bombFlash=0;
@@ -3013,6 +3036,7 @@ function startGame() {
   if (typeof _lastMultiplier === 'number') _lastMultiplier=1;
   if (typeof lastWaveShown === 'number') lastWaveShown=0;
   resetPlayer(); updateUI(); updateBombUI(); state='playing';
+  updateOrientationPrompt();
   resumeAudio(); // initAudio will auto-start music when ready
   playSample('gameStart', 0, 1, 0.65);
   if (_musicEnabled) startMusic();  // also call directly in case audio already initialized
@@ -3164,6 +3188,7 @@ function endGame() {
   playSample(score > highScore ? 'hiScore' : 'gameOver', 0, 1, 0.7);
   if (score > highScore) { highScore = score; try { sessionStorage.setItem('vw_highscore', highScore); } catch(e) {} }
   state='gameover';
+  updateOrientationPrompt();
   const overlay=document.getElementById('overlay');
   overlay.innerHTML=`
     <h1>GAME OVER</h1>
@@ -3438,6 +3463,31 @@ function setTouchEnabled() {
   touchInput.enabled = mobileLike;
   document.body.classList.toggle('touch-enabled', mobileLike);
   if (profileChanged && W && H) initGrid();
+  updateOrientationPrompt();
+}
+
+function isPortraitView() {
+  return window.innerHeight > window.innerWidth;
+}
+
+function updateOrientationPrompt() {
+  document.body.classList.toggle('portrait-play', !!(perfProfile.mobile && state === 'playing' && isPortraitView()));
+}
+
+async function requestMobileFullscreenLandscape() {
+  if (!perfProfile.mobile) return;
+  const root = document.documentElement;
+  try {
+    if (!document.fullscreenElement && root.requestFullscreen) {
+      await root.requestFullscreen({ navigationUI: 'hide' });
+    }
+  } catch(e) {}
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock('landscape');
+    }
+  } catch(e) {}
+  updateOrientationPrompt();
 }
 
 function setupTouchStick(id, role) {
@@ -3490,7 +3540,8 @@ function setupTouchStick(id, role) {
 }
 
 setTouchEnabled();
-window.addEventListener('resize', setTouchEnabled);
+window.addEventListener('resize', () => { setTouchEnabled(); updateOrientationPrompt(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { setTouchEnabled(); updateOrientationPrompt(); }, 250));
 setupTouchStick('touch-move', 'move');
 setupTouchStick('touch-aim', 'aim');
 const touchBomb = document.getElementById('touch-bomb');
