@@ -519,8 +519,10 @@ const perfProfile = {
   gridStep:1,
   wakeEvery:2,
   wakeScale:1,
+  allowBulletGridWarp:true,
   allowGridDimming:true,
-  maxParticles:520
+  maxParticles:520,
+  maxBullets:180
 };
 function isMobileLikeDevice() {
   return matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -534,8 +536,10 @@ function applyPerformanceProfile() {
   perfProfile.gridStep = mobileLike ? 2 : 1;
   perfProfile.wakeEvery = mobileLike ? 5 : 2;
   perfProfile.wakeScale = mobileLike ? 0.45 : 1;
+  perfProfile.allowBulletGridWarp = !mobileLike;
   perfProfile.allowGridDimming = !mobileLike;
   perfProfile.maxParticles = mobileLike ? 260 : 520;
+  perfProfile.maxBullets = mobileLike ? 80 : 180;
   return wasMobile !== mobileLike;
 }
 const CONTROLLER_MAP_KEY = 'vw_controller_map_v1';
@@ -1096,9 +1100,9 @@ function initAudio() {
 
     // Sampled SFX pack overrides. Tone music remains optional, but gameplay SFX use the WAV folder.
     playShoot = (lvl) => {
-      if (!allowSfx('shoot', 0.020)) return;
+      if (!allowSfx('shoot', perfProfile.mobile ? 0.055 : 0.020)) return;
       const variant = lvl >= 4 ? 1 : lvl >= 2 ? 2 : 0;
-      playSample('shoot', variant, 0.97 + Math.random() * 0.06, 0.75);
+      playSample('shoot', variant, 0.97 + Math.random() * 0.06, perfProfile.mobile ? 0.48 : 0.75);
     };
     playEnemyDie = (color) => {
       if (!allowSfx('die', 0.030)) return;
@@ -1294,6 +1298,10 @@ function getWeaponLevel(kills) {
 }
 const WEAPON_COLORS = ['#00ffff','#00ffff','#44ffaa','#ffff00','#ff8800','#00e6c8'];
 const WEAPON_NAMES  = ['STANDARD','RAPID','DOUBLE','TRIPLE','QUAD','SPREAD'];
+function addBullet(bullet) {
+  if (bullets.length >= perfProfile.maxBullets) bullets.shift();
+  bullets.push(bullet);
+}
 
 function fireBullets(x, y, angle) {
   const lvl = weaponLevel;
@@ -1322,7 +1330,7 @@ function fireBullets(x, y, angle) {
     const delay = maxStagger > 0 ? Math.random() * maxStagger : 0;
     if (delay === 0) {
       const mvx = Math.cos(a)*spdVar, mvy = Math.sin(a)*spdVar;
-      bullets.push({ x, y,
+      addBullet({ x, y,
         vx: mvx*0.25, vy: mvy*0.25,   // start slow
         mvx, mvy,                       // target velocity
         life: 120+Math.floor(Math.random()*15), color:col, warpForce });
@@ -1330,7 +1338,7 @@ function fireBullets(x, y, angle) {
       // Schedule delayed bullets using setTimeout — feels like a burst fire
       setTimeout(() => {
         if (state !== 'playing' || !player.alive) return;
-        bullets.push({ x: player.x + Math.cos(player.angle)*20,
+        addBullet({ x: player.x + Math.cos(player.angle)*20,
                        y: player.y + Math.sin(player.angle)*20,
                        vx: Math.cos(a)*spdVar*0.25, vy: Math.sin(a)*spdVar*0.25,
                        mvx: Math.cos(a)*spdVar, mvy: Math.sin(a)*spdVar,
@@ -1725,7 +1733,7 @@ function updatePlayer() {
 
   player.shootTimer--;
   if (rapidTimer > 0 && weaponLevel >= 3) {
-    if ((mouse.down || keys[' '] || gamepad.shoot) && player.shootTimer <= 0) {
+    if ((mouse.down || keys[' '] || gamepad.shoot || touchInput.shoot) && player.shootTimer <= 0) {
       player.shootTimer = getRapidSpreadRate();
       const bx = player.x + Math.cos(player.angle) * 20;
       const by = player.y + Math.sin(player.angle) * 20;
@@ -1874,7 +1882,8 @@ function drawThrusterParticles() {
 // ── Bullets ────────────────────────────────────────────────────────────
 const bullets = [];
 function updateBullets() {
-  for (let i = bullets.length-1; i >= 0; i--) {
+  let write = 0;
+  for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
     // Accelerate to full speed over ~20 frames — gentle launch, builds to full velocity
     if (b.mvx !== undefined) {
@@ -1890,7 +1899,7 @@ function updateBullets() {
     const curSpd = Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     const spdFrac = Math.min(curSpd / maxSpd, 1); // 0→1 as bullet accelerates
 
-    if (spdFrac > 0.35 && (b.life % perfProfile.wakeEvery === 0 || (!perfProfile.mobile && weaponLevel >= 4))) {
+    if (perfProfile.allowBulletGridWarp && spdFrac > 0.35 && (b.life % perfProfile.wakeEvery === 0 || weaponLevel >= 4)) {
       if (weaponLevel >= 3) {
         const wakeForce  = (3.5 + (weaponLevel - 3) * 1.0) * spdFrac; // 3.5/4.5/5.5
         const wakeRadius = 48 + (weaponLevel - 3) * 8;  // 48/56/64
@@ -1899,12 +1908,32 @@ function updateBullets() {
         disturbGrid(b.x, b.y, b.warpForce * spdFrac, 45);
       }
     }
-    if (b.life <= 0 || b.x<0||b.x>W||b.y<0||b.y>H) {
-      bullets.splice(i,1);
-    }
+    if (b.life > 0 && b.x>=0 && b.x<=W && b.y>=0 && b.y<=H) bullets[write++] = b;
   }
+  bullets.length = write;
 }
 function drawBullets() {
+  if (perfProfile.mobile) {
+    ctx.lineWidth = 2;
+    for (let i = 0; i < bullets.length; i++) {
+      const b = bullets[i];
+      const spd = Math.sqrt(b.vx*b.vx + b.vy*b.vy) || 1;
+      const tx = (b.vx / spd) * 9;
+      const ty = (b.vy / spd) * 9;
+      ctx.globalAlpha = 0.92;
+      ctx.strokeStyle = b.color;
+      ctx.beginPath();
+      ctx.moveTo(b.x - tx, b.y - ty);
+      ctx.lineTo(b.x + tx * 0.45, b.y + ty * 0.45);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(b.x + tx * 0.55, b.y + ty * 0.55, 1.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
   for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
     const angle = Math.atan2(b.vy, b.vx);
