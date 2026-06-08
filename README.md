@@ -12,7 +12,7 @@ VectorWars_Phase1_21_VisualTuning.html
 
 - Twin-stick style movement and aiming
 - Keyboard, mouse, and game controller support
-- Controller axis mapping for Xbox, 8BitDo, and other browser-supported gamepads
+- Controller axis mapping for gamepads, Bluetooth controllers, and other browser-supported devices
 - Persistent best score, best wave, highest multiplier, lifetime kills, and leaderboard
 - Initials entry for leaderboard runs
 - Dynamic multiplier-driven grid colors
@@ -31,6 +31,14 @@ Open the latest HTML file directly in a browser:
 VectorWars_Phase1_21_VisualTuning.html
 ```
 
+You can also open:
+
+```text
+index.html
+```
+
+`index.html` redirects to the latest playable build.
+
 For best results, use a Chromium-based browser such as Chrome or Edge.
 
 If audio or controller support behaves inconsistently when opening the file directly, run a local web server from the project folder:
@@ -42,7 +50,7 @@ python -m http.server 8765
 Then open:
 
 ```text
-http://localhost:8765/VectorWars_Phase1_21_VisualTuning.html
+http://localhost:8765/
 ```
 
 ## Controls
@@ -86,19 +94,26 @@ Keep those folders next to the HTML file so sampled sound effects and background
 
 Earlier phase files are preserved as recovery builds and development history. The latest build should be used for normal play unless you are intentionally testing an older phase.
 
-Key file:
+Root files:
 
 ```text
+index.html
+README.md
 VectorWars_Phase1_21_VisualTuning.html
+music/
+sfx/
 ```
 
-Stable/recovery files may include:
+Archived phase builds:
 
 ```text
-vector-wars_baseBuild.html
-VectorWars_Phase1.html
-VectorWars_Phase1_1.html
-...
+Docs/build-archive/
+```
+
+Reference/recovery files:
+
+```text
+Docs/reference/
 ```
 
 ## Notes
