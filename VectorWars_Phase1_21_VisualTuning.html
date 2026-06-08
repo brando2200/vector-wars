@@ -467,8 +467,8 @@ body.touch-enabled.portrait-play #rotate-overlay { display: flex; }
     </div>
     <div class="vol-row">
       <span>Music On</span>
-      <input type="checkbox" id="music-enabled">
-      <span class="vol-val" id="music-enabled-val">OFF</span>
+      <input type="checkbox" id="music-enabled" checked>
+      <span class="vol-val" id="music-enabled-val">ON</span>
     </div>
     <div class="vol-row">
       <span>SFX</span>
@@ -815,7 +815,7 @@ let stopMusic        = () => {};
 
 // Volume state (persists before audio init)
 let _musicVol = 60, _sfxVol = 70;
-let _musicEnabled = false;
+let _musicEnabled = true;
 let sampledMusic = null;
 
 function initSampledMusic() {
@@ -3215,7 +3215,7 @@ const musicEnabledEl = document.getElementById('music-enabled');
 if (volMusic) volMusic.addEventListener('input', e => setMusicVol(+e.target.value));
 if (volSfx)   volSfx.addEventListener('input',   e => setSfxVol(+e.target.value));
 if (musicEnabledEl) musicEnabledEl.addEventListener('change', e => setMusicEnabled(e.target.checked));
-setMusicEnabled(false);
+setMusicEnabled(true);
 
 
 // ---- Phase 1.3 Hybrid Feedback Enhancements ----
