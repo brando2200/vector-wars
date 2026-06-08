@@ -60,11 +60,51 @@ canvas { display: block; }
   color: rgba(255,255,255,0.5); text-transform: uppercase;
 }
 #overlay .instructions {
-  font-size: 0.75rem; line-height: 2.2; letter-spacing: 0.1em;
+  font-size: 0.75rem; line-height: 1.55; letter-spacing: 0.08em;
   color: rgba(255,255,255,0.35); text-align: center;
-  margin-top: 10px;
+  margin-top: 12px;
+  width: min(620px, calc(100vw - 36px));
 }
 #overlay .instructions span { color: cyan; }
+.instructions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  text-align: left;
+}
+.instruction-section {
+  border-top: 1px solid rgba(0,255,255,0.24);
+  padding-top: 10px;
+}
+.instruction-title {
+  color: rgba(255,255,255,0.58);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.control-row {
+  display: grid;
+  grid-template-columns: 66px 1fr;
+  gap: 10px;
+  margin: 5px 0;
+}
+.control-action {
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+}
+.control-input { color: rgba(255,255,255,0.35); }
+.objective-list {
+  color: rgba(255,255,255,0.45);
+}
+.objective-list div { margin: 5px 0; }
+@media (max-width: 760px) {
+  .instructions-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .control-row { grid-template-columns: 88px 1fr; }
+}
 #start-btn {
   margin-top: 20px;
   padding: 16px 60px;
@@ -369,16 +409,31 @@ body.touch-enabled #touch-controls { display: block; }
   <h1>VECTOR WARS</h1>
   <div class="sub">// neon arcade combat //</div>
   <div class="instructions">
-    <span>WASD</span> or <span>Arrow Keys</span> — Move<br>
-    <span>Mouse</span> — Aim<br>
-    <span>Left Click</span> or <span>Space</span> — Shoot<br>
-    <span>Gamepad</span> — Left Stick Move / Right Stick Shoot<br>
-    <span>Map Controller</span> — Set stick axes if aim is wrong<br>
-    <span>Touchscreen</span> — Dual sticks + bomb button<br>
-    <span>B</span> or <span>Left Trigger</span> — Bomb<br>
-    Kill enemies to build your <span>multiplier</span><br>
-    <span>Right Click</span> — Bomb (clears screen, resets multiplier)<br>
-    Don't get hit — you have 3 lives
+    <div class="instructions-grid">
+      <div class="instruction-section">
+        <div class="instruction-title">Keyboard + Mouse</div>
+        <div class="control-row"><div class="control-action">Move</div><div class="control-input"><span>WASD</span> or <span>Arrow Keys</span></div></div>
+        <div class="control-row"><div class="control-action">Aim</div><div class="control-input"><span>Mouse</span></div></div>
+        <div class="control-row"><div class="control-action">Shoot</div><div class="control-input"><span>Left Click</span> or <span>Space</span></div></div>
+        <div class="control-row"><div class="control-action">Bomb</div><div class="control-input"><span>Right Click</span></div></div>
+      </div>
+      <div class="instruction-section">
+        <div class="instruction-title">Controller / Touch</div>
+        <div class="control-row"><div class="control-action">Move</div><div class="control-input"><span>Left Stick</span></div></div>
+        <div class="control-row"><div class="control-action">Shoot</div><div class="control-input"><span>Right Stick</span></div></div>
+        <div class="control-row"><div class="control-action">Bomb</div><div class="control-input"><span>B</span> or <span>Left Trigger</span></div></div>
+        <div class="control-row"><div class="control-action">Touch</div><div class="control-input"><span>Dual Sticks</span> + <span>Bomb</span></div></div>
+      </div>
+      <div class="instruction-section">
+        <div class="instruction-title">Objective</div>
+        <div class="objective-list">
+          <div>Destroy enemies to raise your <span>multiplier</span>.</div>
+          <div>Bomb clears the screen and resets the multiplier.</div>
+          <div>You have <span>3 lives</span>. Survive as many waves as possible.</div>
+          <div>Use <span>Map Controller</span> if stick aim feels wrong.</div>
+        </div>
+      </div>
+    </div>
   </div>
   <button id="controller-map-btn">MAP CONTROLLER</button>
   <div id="controller-map-status">For gamepad / Bluetooth controller axis setup</div>
