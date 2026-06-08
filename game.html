@@ -535,9 +535,9 @@ function applyPerformanceProfile() {
   perfProfile.gridCols = mobileLike ? 54 : 120;
   perfProfile.gridRows = mobileLike ? 36 : 80;
   perfProfile.gridStep = mobileLike ? 2 : 1;
-  perfProfile.wakeEvery = mobileLike ? 5 : 2;
-  perfProfile.wakeScale = mobileLike ? 0.45 : 1;
-  perfProfile.allowBulletGridWarp = !mobileLike;
+  perfProfile.wakeEvery = mobileLike ? 8 : 2;
+  perfProfile.wakeScale = mobileLike ? 0.22 : 1;
+  perfProfile.allowBulletGridWarp = true;
   perfProfile.allowGridDimming = !mobileLike;
   perfProfile.shootSfx = !mobileLike;
   perfProfile.maxParticles = mobileLike ? 260 : 520;
@@ -1909,13 +1909,13 @@ function updateBullets() {
     const curSpd = Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     const spdFrac = Math.min(curSpd / maxSpd, 1); // 0→1 as bullet accelerates
 
-    if (perfProfile.allowBulletGridWarp && spdFrac > 0.35 && (b.life % perfProfile.wakeEvery === 0 || weaponLevel >= 4)) {
-      if (weaponLevel >= 3) {
+    if (perfProfile.allowBulletGridWarp && spdFrac > 0.35 && (b.life % perfProfile.wakeEvery === 0 || (!perfProfile.mobile && weaponLevel >= 4))) {
+      if (!perfProfile.mobile && weaponLevel >= 3) {
         const wakeForce  = (3.5 + (weaponLevel - 3) * 1.0) * spdFrac; // 3.5/4.5/5.5
         const wakeRadius = 48 + (weaponLevel - 3) * 8;  // 48/56/64
         bulletWakeGrid(b.x, b.y, b.vx, b.vy, wakeForce, wakeRadius);
       } else {
-        disturbGrid(b.x, b.y, b.warpForce * spdFrac, 45);
+        disturbGrid(b.x, b.y, b.warpForce * spdFrac, perfProfile.mobile ? 34 : 45);
       }
     }
     if (b.life > 0 && b.x>=0 && b.x<=W && b.y>=0 && b.y<=H) bullets[write++] = b;
