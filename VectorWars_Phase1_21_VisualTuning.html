@@ -2919,15 +2919,15 @@ function drawEnemies() {
       }
 
     } else if (e.type==='worm') {
-      // Linked neon chain: tight glowing rings with a faceted purple head.
+      // Linked neon chain: separated glowing rings with a faceted purple head.
       const segCount = e.segments.length;
       if (segCount > 1) {
         ctx.beginPath();
         ctx.moveTo(e.segments[0].x, e.segments[0].y);
         const pathStep = enemies.length > 30 ? 2 : 1;
         for (let si=1; si<segCount; si+=pathStep) ctx.lineTo(e.segments[si].x, e.segments[si].y);
-        ctx.strokeStyle='rgba(255,120,18,0.34)';
-        ctx.lineWidth=e.r*1.45;
+        ctx.strokeStyle='rgba(255,120,18,0.24)';
+        ctx.lineWidth=e.r*0.9;
         ctx.lineCap='round';
         ctx.lineJoin='round';
         ctx.stroke();
@@ -2936,17 +2936,17 @@ function drawEnemies() {
       for (let si=segCount-1;si>=1;si-=beadStep) {
         const seg=e.segments[si];
         const t=si/Math.max(1,segCount-1);
-        const sr=e.r*(1.32-t*0.24);
-        ctx.globalAlpha=0.2;
-        ctx.beginPath(); ctx.arc(seg.x,seg.y,sr+4.5,0,Math.PI*2);
+        const sr=e.r*(1.08-t*0.2);
+        ctx.globalAlpha=0.16;
+        ctx.beginPath(); ctx.arc(seg.x,seg.y,sr+3,0,Math.PI*2);
         ctx.fillStyle='#ff6e12'; ctx.fill();
         ctx.globalAlpha=1;
         ctx.beginPath(); ctx.arc(seg.x,seg.y,sr,0,Math.PI*2);
         ctx.fillStyle='#150700'; ctx.fill();
         ctx.strokeStyle=si%2 ? '#ffe45c' : '#ff8a18';
-        ctx.lineWidth=2.1;
+        ctx.lineWidth=1.8;
         ctx.stroke();
-        ctx.beginPath(); ctx.arc(seg.x,seg.y,Math.max(2,sr*0.46),0,Math.PI*2);
+        ctx.beginPath(); ctx.arc(seg.x,seg.y,Math.max(1.6,sr*0.38),0,Math.PI*2);
         ctx.strokeStyle='rgba(255,242,166,0.8)';
         ctx.lineWidth=1.2;
         ctx.stroke();
