@@ -1364,6 +1364,7 @@ function getWeaponLevel(kills) {
 }
 const WEAPON_COLORS = ['#00ffff','#00ffff','#44ffaa','#ffff00','#ff8800','#00e6c8'];
 const WEAPON_NAMES  = ['STANDARD','RAPID','DOUBLE','TRIPLE','QUAD','SPREAD'];
+const PLAYER_COLOR = '#ffdd33';
 function addBullet(bullet) {
   if (bullets.length >= perfProfile.maxBullets) bullets.shift();
   bullets.push(bullet);
@@ -1783,7 +1784,7 @@ function updatePlayer() {
       const spread = (Math.random() - 0.5) * 0.7;
       const exhaustAngle = player.angle + Math.PI + spread;
       const exhaustSpd = 1.5 + Math.random() * spd2 * 0.6;
-      const col = WEAPON_COLORS[weaponLevel];
+      const col = PLAYER_COLOR;
       thrusterParticles.push({
         x: rearX + (Math.random()-0.5)*4,
         y: rearY + (Math.random()-0.5)*4,
@@ -1859,7 +1860,7 @@ function drawGlowShape(drawFn, col, glowSize, glowAlpha) {
 function drawPlayer() {
   if (!player.alive) return;
   if (invincTimer > 0 && Math.floor(invincTimer/4)%2===0) return;
-  const col = WEAPON_COLORS[weaponLevel];
+  const col = PLAYER_COLOR;
   ctx.save();
   ctx.translate(player.x, player.y);
   ctx.rotate(player.angle);
@@ -1979,64 +1980,32 @@ function updateBullets() {
   bullets.length = write;
 }
 function drawBullets() {
-  if (perfProfile.mobile) {
-    ctx.lineWidth = 2;
-    for (let i = 0; i < bullets.length; i++) {
-      const b = bullets[i];
-      const spd = Math.sqrt(b.vx*b.vx + b.vy*b.vy) || 1;
-      const tx = (b.vx / spd) * 9;
-      const ty = (b.vy / spd) * 9;
-      ctx.globalAlpha = 0.92;
-      ctx.strokeStyle = b.color;
-      ctx.beginPath();
-      ctx.moveTo(b.x - tx, b.y - ty);
-      ctx.lineTo(b.x + tx * 0.45, b.y + ty * 0.45);
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(b.x + tx * 0.55, b.y + ty * 0.55, 1.5, 0, Math.PI*2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    return;
-  }
   for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
-    const angle = Math.atan2(b.vy, b.vx);
-    ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.rotate(angle);
-
-    // Outer glow halo — soft wide arrow shape
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = b.color;
-    ctx.beginPath();
-    ctx.moveTo(7, 0);        // nose
-    ctx.lineTo(-4, -3);      // left wing
-    ctx.lineTo(-2, 0);       // tail notch
-    ctx.lineTo(-4, 3);       // right wing
-    ctx.closePath();
-    ctx.fill();
-
-    // Bright core arrow — sharp, opaque
-    ctx.globalAlpha = 1;
+    const spd = Math.sqrt(b.vx*b.vx + b.vy*b.vy) || 1;
+    const len = perfProfile.mobile ? 9 : 12;
+    const tx = (b.vx / spd) * len;
+    const ty = (b.vy / spd) * len;
+    if (!perfProfile.mobile) {
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(b.x - tx * 1.25, b.y - ty * 1.25);
+      ctx.lineTo(b.x + tx * 0.5, b.y + ty * 0.5);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.92;
     ctx.strokeStyle = b.color;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = perfProfile.mobile ? 2 : 2.4;
     ctx.beginPath();
-    ctx.moveTo(7, 0);
-    ctx.lineTo(-4, -3);
-    ctx.lineTo(-2, 0);
-    ctx.lineTo(-4, 3);
-    ctx.closePath();
+    ctx.moveTo(b.x - tx, b.y - ty);
+    ctx.lineTo(b.x + tx * 0.45, b.y + ty * 0.45);
     ctx.stroke();
-
-    // Hot white tip
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(5, 0, 1.2, 0, Math.PI*2);
+    ctx.arc(b.x + tx * 0.55, b.y + ty * 0.55, perfProfile.mobile ? 1.5 : 1.8, 0, Math.PI*2);
     ctx.fill();
-
-    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
@@ -2186,10 +2155,10 @@ function countPendingType(type) {
 }
 
 function getMaxActiveEnemies() {
-  const base = perfProfile.mobile ? 36 : 48;
-  const growth = Math.floor(Math.max(0, wave - 4) * (perfProfile.mobile ? 1.2 : 1.8));
-  const themeBoost = currentWaveTheme === 'survival' ? 10 : (currentWaveTheme === 'mixed' ? 4 : 0);
-  return Math.min(perfProfile.mobile ? 68 : 96, base + growth + themeBoost);
+  const base = perfProfile.mobile ? 44 : 58;
+  const growth = Math.floor(Math.max(0, wave - 4) * (perfProfile.mobile ? 1.55 : 2.25));
+  const themeBoost = currentWaveTheme === 'survival' ? 14 : (currentWaveTheme === 'mixed' ? 6 : 2);
+  return Math.min(perfProfile.mobile ? 84 : 122, base + growth + themeBoost);
 }
 
 function queueSpawn(type, eliteChance) {
@@ -3035,10 +3004,10 @@ function spawnWave() {
   spawnTimer--;
   if (spawnTimer<=0) {
     const themePressure = currentWaveTheme === 'survival' ? -8 : (currentWaveTheme === 'blackhole' ? -18 : (currentWaveTheme === 'mixed' ? 0 : 8));
-    const latePressure = Math.min(24, Math.max(0, wave - 7) * 2);
-    spawnTimer=Math.max(perfProfile.mobile ? 24 : 20, spawnInterval-wave*8-themePressure-latePressure);
-    const themeLimit = currentWaveTheme === 'survival' ? 7 : (currentWaveTheme === 'blackhole' ? 4 : 8);
-    const count=Math.min(themeLimit, 1+Math.floor(wave/2) + Math.floor(Math.max(0, wave-8)/4));
+    const latePressure = Math.min(34, Math.max(0, wave - 7) * 2.6);
+    spawnTimer=Math.max(perfProfile.mobile ? 21 : 17, spawnInterval-wave*8-themePressure-latePressure);
+    const themeLimit = currentWaveTheme === 'survival' ? 9 : (currentWaveTheme === 'blackhole' ? 5 : 10);
+    const count=Math.min(themeLimit, 1+Math.floor(wave/2) + Math.floor(Math.max(0, wave-8)/3));
     const eliteChance = Math.min(0.22, 0.04 + wave*0.010 + (currentWaveTheme === 'survival' ? 0.03 : 0));
     for (let i=0;i<count;i++) queueSpawn(getWaveEnemyType(), eliteChance);
   }
