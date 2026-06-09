@@ -70,6 +70,11 @@ canvas {
   background: rgba(0,0,0,0.85);
   z-index: 20;
   gap: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: max(20px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
 }
 #overlay h1 {
   font-size: clamp(2.5rem,8vw,6rem);
@@ -123,11 +128,94 @@ canvas {
 }
 .objective-list div { margin: 5px 0; }
 @media (max-width: 760px) {
-  .instructions-grid {
-    grid-template-columns: 1fr;
+  #overlay {
+    justify-content: flex-start;
     gap: 12px;
   }
+  #overlay h1 {
+    font-size: clamp(2rem, 13vw, 3.7rem);
+    letter-spacing: 0.16em;
+    margin-top: 4px;
+  }
+  #overlay .sub {
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+  }
+  #overlay .instructions {
+    font-size: 0.68rem;
+    line-height: 1.35;
+    margin-top: 4px;
+  }
+  .instructions-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .instruction-section { padding-top: 7px; }
+  .instruction-title { margin-bottom: 5px; }
+  .objective-list div,
+  .control-row { margin: 3px 0; }
   .control-row { grid-template-columns: 88px 1fr; }
+  #controller-map-btn {
+    padding: 8px 18px;
+    font-size: 0.62rem;
+  }
+  #controller-map-status {
+    font-size: 0.58rem;
+    min-height: 14px;
+  }
+  #vol-controls { gap: 7px; }
+  .vol-row { font-size: 0.58rem; gap: 8px; }
+  .vol-row input[type=range] { width: 116px; }
+  #start-btn {
+    margin-top: 8px;
+    padding: 13px 42px;
+    font-size: 0.74rem;
+  }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  #overlay {
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 10px;
+    padding-bottom: 16px;
+  }
+  #overlay h1 {
+    font-size: clamp(1.7rem, 9vw, 3.2rem);
+    letter-spacing: 0.14em;
+  }
+  #overlay .sub { display: none; }
+  #overlay .instructions {
+    font-size: 0.62rem;
+    line-height: 1.25;
+    width: min(720px, calc(100vw - 24px));
+  }
+  .instructions-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .instruction-section { padding-top: 6px; }
+  .instruction-title { font-size: 0.54rem; margin-bottom: 4px; }
+  .control-row {
+    grid-template-columns: 50px 1fr;
+    gap: 6px;
+    margin: 2px 0;
+  }
+  .objective-list div { margin: 2px 0; }
+  #controller-map-btn { display: none; }
+  #controller-map-status { display: none; }
+  #vol-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 12px;
+  }
+  .vol-row { font-size: 0.54rem; gap: 6px; }
+  .vol-row span { width: auto; }
+  .vol-row input[type=range] { width: 96px; }
+  #start-btn {
+    margin-top: 4px;
+    padding: 11px 38px;
+  }
 }
 #start-btn {
   margin-top: 20px;
@@ -3502,7 +3590,10 @@ document.addEventListener('mousedown', e=>{
 });
 document.addEventListener('mouseup',   e=>{ if(e.button===0) mouse.down=false; });
 document.addEventListener('contextmenu', e=>e.preventDefault());
-document.addEventListener('touchmove', e=>{ if (touchInput.enabled || e.touches.length > 1) e.preventDefault(); }, { passive:false });
+document.addEventListener('touchmove', e=>{
+  if (e.target.closest && e.target.closest('#overlay')) return;
+  if (touchInput.enabled || e.touches.length > 1) e.preventDefault();
+}, { passive:false });
 ['gesturestart','gesturechange','gestureend'].forEach(type => {
   document.addEventListener(type, e=>e.preventDefault(), { passive:false });
 });
