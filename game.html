@@ -3110,11 +3110,14 @@ function startGame() {
 
 const LEADERBOARD_KEY = 'vw_leaderboard_v1';
 const INITIALS_KEY = 'vw_player_initials';
-function cleanInitials(value) {
+function formatInitialsEdit(value) {
   return String(value || '')
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 3) || 'AAA';
+    .slice(0, 3);
+}
+function cleanInitials(value) {
+  return formatInitialsEdit(value) || 'AAA';
 }
 
 function escapeHtml(value) {
@@ -3186,11 +3189,11 @@ function wouldMakeLeaderboard() {
 
 function renderInitialEntry(show) {
   if (!show) return '';
-  const initials = cleanInitials(localStorage.getItem(INITIALS_KEY) || 'AAA');
+  const initials = formatInitialsEdit(localStorage.getItem(INITIALS_KEY) || '');
   return `
     <div id="initial-entry">
       <span>Initials</span>
-      <input id="initial-input" type="text" inputmode="text" maxlength="3" value="${escapeHtml(initials)}" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <input id="initial-input" type="text" inputmode="text" maxlength="3" value="${escapeHtml(initials)}" placeholder="AAA" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <button id="save-initials-btn">Lock</button>
     </div>
   `;
@@ -3233,10 +3236,14 @@ function wireInitialEntry() {
     else if (entry) entry.insertAdjacentHTML('afterend', renderLeaderboard(leaderboard.entries, leaderboard.rank));
     entry?.remove();
   };
-  input.addEventListener('input', () => { input.value = cleanInitials(input.value); });
+  input.addEventListener('input', () => { input.value = formatInitialsEdit(input.value); });
   input.addEventListener('pointerdown', e => {
     e.stopPropagation();
-    setTimeout(() => { input.focus(); input.select(); }, 0);
+    input.focus();
+  });
+  input.addEventListener('click', e => {
+    e.stopPropagation();
+    input.focus();
   });
   input.addEventListener('touchstart', e => e.stopPropagation(), { passive:true });
   input.addEventListener('keydown', e => {
@@ -3245,7 +3252,7 @@ function wireInitialEntry() {
   });
   btn.addEventListener('click', save);
   btn.saveInitials = save;
-  setTimeout(() => { input.focus(); input.select(); }, 40);
+  setTimeout(() => { if (!perfProfile.mobile) { input.focus(); input.select(); } }, 40);
 }
 
 function endGame() {
